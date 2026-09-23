@@ -1,0 +1,1725 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Future English Trainer</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #050816;
+            --card: rgba(15, 23, 42, 0.72);
+            --border: rgba(255, 255, 255, 0.1);
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --cyan: #22d3ee;
+            --purple: #8b5cf6;
+            --green: #22c55e;
+            --red: #ef4444;
+            --yellow: #facc15;
+        }
+
+        body {
+            font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+            min-height: 100vh;
+            color: var(--text);
+            background:
+                radial-gradient(circle at 15% 20%, rgba(34, 211, 238, 0.13), transparent 28%),
+                radial-gradient(circle at 85% 15%, rgba(139, 92, 246, 0.16), transparent 30%),
+                radial-gradient(circle at 50% 100%, rgba(34, 197, 94, 0.08), transparent 35%),
+                var(--bg);
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+            background-size: 45px 45px;
+            mask-image: linear-gradient(to bottom, black, transparent);
+        }
+
+        .app {
+            width: min(900px, 94%);
+            margin: auto;
+            padding: 35px 0 50px;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* HEADER */
+
+        header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .logo {
+            width: 68px;
+            height: 68px;
+            margin: 0 auto 15px;
+            border-radius: 22px;
+            display: grid;
+            place-items: center;
+            font-size: 30px;
+            background: linear-gradient(135deg, var(--cyan), var(--purple));
+            box-shadow:
+                0 0 35px rgba(34, 211, 238, 0.25),
+                0 0 70px rgba(139, 92, 246, 0.15);
+        }
+
+        h1 {
+            font-size: clamp(27px, 6vw, 44px);
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            margin-top: 7px;
+            font-size: 14px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            margin-top: 14px;
+            padding: 7px 13px;
+            border: 1px solid rgba(34,211,238,.22);
+            background: rgba(34,211,238,.06);
+            border-radius: 100px;
+            color: #a5f3fc;
+            font-size: 12px;
+        }
+
+        /* CARD */
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow:
+                0 30px 80px rgba(0,0,0,.3),
+                inset 0 1px 0 rgba(255,255,255,.04);
+            overflow: hidden;
+        }
+
+        .topbar {
+            padding: 20px 24px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .counter {
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        .counter strong {
+            color: white;
+            font-size: 18px;
+        }
+
+        .score-mini {
+            padding: 7px 12px;
+            border-radius: 10px;
+            background: rgba(255,255,255,.05);
+            color: #cbd5e1;
+            font-size: 13px;
+        }
+
+        .progress-wrap {
+            padding: 0 24px 20px;
+        }
+
+        .progress {
+            height: 7px;
+            background: rgba(255,255,255,.06);
+            border-radius: 99px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, var(--cyan), var(--purple));
+            box-shadow: 0 0 18px rgba(34,211,238,.45);
+            transition: width .4s ease;
+        }
+
+        .question {
+            padding: 40px 35px 30px;
+            text-align: center;
+        }
+
+        .question-label {
+            color: var(--muted);
+            font-size: 13px;
+            margin-bottom: 18px;
+        }
+
+        .arabic-word {
+            font-size: clamp(26px, 7vw, 43px);
+            font-weight: 800;
+            margin-bottom: 10px;
+            line-height: 1.35;
+            text-shadow: 0 0 25px rgba(255,255,255,.08);
+        }
+
+        .question-hint {
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .input-area {
+            margin: 28px auto 0;
+            width: min(650px, 100%);
+            position: relative;
+        }
+
+        input {
+            width: 100%;
+            padding: 18px 55px 18px 18px;
+            border-radius: 17px;
+            border: 1px solid rgba(255,255,255,.1);
+            background: rgba(0,0,0,.25);
+            color: white;
+            font-size: 18px;
+            direction: ltr;
+            text-align: left;
+            outline: none;
+            transition: .25s;
+        }
+
+        input::placeholder {
+            color: #475569;
+        }
+
+        input:focus {
+            border-color: rgba(34,211,238,.65);
+            box-shadow:
+                0 0 0 4px rgba(34,211,238,.08),
+                0 0 30px rgba(34,211,238,.08);
+        }
+
+        .speak-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            border: 0;
+            border-radius: 12px;
+            cursor: pointer;
+            background: rgba(34,211,238,.1);
+            color: var(--cyan);
+            font-size: 18px;
+            transition: .2s;
+        }
+
+        .speak-btn:hover {
+            background: rgba(34,211,238,.2);
+            transform: translateY(-50%) scale(1.05);
+        }
+
+        .actions {
+            padding: 0 35px 35px;
+            display: flex;
+            gap: 12px;
+        }
+
+        button {
+            font-family: inherit;
+        }
+
+        .main-btn {
+            flex: 1;
+            padding: 15px;
+            border: 0;
+            border-radius: 15px;
+            cursor: pointer;
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--cyan), var(--purple));
+            box-shadow: 0 10px 30px rgba(34,211,238,.15);
+            transition: .2s;
+        }
+
+        .main-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px rgba(34,211,238,.22);
+        }
+
+        .secondary-btn {
+            padding: 15px 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,.1);
+            background: rgba(255,255,255,.04);
+            color: #cbd5e1;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .secondary-btn:hover {
+            background: rgba(255,255,255,.08);
+        }
+
+        /* FEEDBACK */
+
+        .feedback {
+            margin: 0 35px 30px;
+            padding: 18px;
+            border-radius: 17px;
+            display: none;
+            text-align: right;
+        }
+
+        .feedback.show {
+            display: block;
+        }
+
+        .feedback.correct {
+            background: rgba(34,197,94,.08);
+            border: 1px solid rgba(34,197,94,.2);
+        }
+
+        .feedback.wrong {
+            background: rgba(239,68,68,.08);
+            border: 1px solid rgba(239,68,68,.2);
+        }
+
+        .feedback-title {
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+
+        .correct .feedback-title {
+            color: #86efac;
+        }
+
+        .wrong .feedback-title {
+            color: #fca5a5;
+        }
+
+        .answer-line {
+            direction: ltr;
+            text-align: left;
+            padding: 11px;
+            margin-top: 8px;
+            background: rgba(0,0,0,.2);
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 16px;
+        }
+
+        .correct-answer {
+            color: #86efac;
+        }
+
+        .user-answer {
+            color: #fca5a5;
+        }
+
+        /* ANALYSIS */
+
+        .analysis {
+            margin-top: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+        }
+
+        .error-chip {
+            padding: 6px 9px;
+            border-radius: 8px;
+            font-size: 12px;
+            background: rgba(239,68,68,.1);
+            border: 1px solid rgba(239,68,68,.18);
+            color: #fecaca;
+        }
+
+        .missing {
+            background: rgba(250,204,21,.08);
+            border-color: rgba(250,204,21,.2);
+            color: #fde68a;
+        }
+
+        .extra {
+            background: rgba(239,68,68,.1);
+            border-color: rgba(239,68,68,.2);
+        }
+
+        .swapped {
+            background: rgba(139,92,246,.1);
+            border-color: rgba(139,92,246,.25);
+            color: #ddd6fe;
+        }
+
+        /* RESULTS */
+
+        .results {
+            display: none;
+            padding: 35px;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .results-title {
+            text-align: center;
+            font-size: 30px;
+            font-weight: 800;
+        }
+
+        .result-subtitle {
+            text-align: center;
+            color: var(--muted);
+            margin-top: 7px;
+        }
+
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            margin: 30px auto;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background:
+                radial-gradient(circle at center, #0f172a 55%, transparent 56%),
+                conic-gradient(var(--cyan) var(--score, 0%), rgba(255,255,255,.06) 0);
+            box-shadow: 0 0 45px rgba(34,211,238,.15);
+        }
+
+        .score-number {
+            font-size: 34px;
+            font-weight: 900;
+        }
+
+        .score-label {
+            font-size: 11px;
+            color: var(--muted);
+            display: block;
+            text-align: center;
+        }
+
+        .result-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 28px;
+        }
+
+        .stat {
+            padding: 15px;
+            border-radius: 15px;
+            background: rgba(255,255,255,.035);
+            text-align: center;
+        }
+
+        .stat-number {
+            display: block;
+            font-size: 23px;
+            font-weight: 800;
+        }
+
+        .stat-label {
+            color: var(--muted);
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        .mistakes-title {
+            margin-bottom: 15px;
+            font-size: 19px;
+        }
+
+        .mistake-item {
+            padding: 16px;
+            border-radius: 15px;
+            background: rgba(255,255,255,.035);
+            border: 1px solid rgba(255,255,255,.06);
+            margin-bottom: 10px;
+        }
+
+        .mistake-arabic {
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .mistake-en {
+            direction: ltr;
+            text-align: left;
+            font-family: monospace;
+            line-height: 1.8;
+        }
+
+        .restart {
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* MOBILE */
+
+        @media (max-width: 600px) {
+            .app {
+                width: 94%;
+                padding-top: 20px;
+            }
+
+            .question {
+                padding: 30px 18px 25px;
+            }
+
+            .actions {
+                padding: 0 18px 25px;
+            }
+
+            .feedback {
+                margin-left: 18px;
+                margin-right: 18px;
+            }
+
+            .results {
+                padding: 25px 18px;
+            }
+
+            .result-stats {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+
+            .secondary-btn {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="app">
+
+    <header>
+        <div class="logo">⚡</div>
+
+        <h1>Future English Trainer</h1>
+
+        <div class="subtitle">
+            اختبر نفسك في كلمات الصورة فقط
+        </div>
+
+        <div class="badge">
+            ✦ 28 كلمة • Smart Spelling Analysis
+        </div>
+    </header>
+
+
+    <div class="card">
+
+        <!-- EXAM -->
+
+        <section id="exam">
+
+            <div class="topbar">
+                <div class="counter">
+                    السؤال
+                    <strong id="currentNumber">1</strong>
+                    من 28
+                </div>
+
+                <div class="score-mini">
+                    ✓ صح: <span id="liveScore">0</span>
+                </div>
+            </div>
+
+            <div class="progress-wrap">
+                <div class="progress">
+                    <div class="progress-fill" id="progress"></div>
+                </div>
+            </div>
+
+
+            <div class="question">
+
+                <div class="question-label">
+                    اكتب الترجمة الإنجليزية
+                </div>
+
+                <div class="arabic-word" id="arabicWord">
+                    يعيد
+                </div>
+
+                <div class="question-hint">
+                    حاول من ذاكرتك — متستعملش زر النطق غير بعد ما تجاوب 😉
+                </div>
+
+
+                <div class="input-area">
+
+                    <input
+                        id="answerInput"
+                        type="text"
+                        autocomplete="off"
+                        spellcheck="false"
+                        placeholder="Type the English answer..."
+                    >
+
+                    <button
+                        class="speak-btn"
+                        onclick="speakCurrent()"
+                        title="اسمع النطق الصحيح"
+                    >
+                        🔊
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <div id="feedback" class="feedback">
+
+                <div class="feedback-title" id="feedbackTitle"></div>
+
+                <div class="answer-line user-answer">
+                    إجابتك:
+                    <span id="userAnswer"></span>
+                </div>
+
+                <div class="answer-line correct-answer">
+                    الصحيح:
+                    <span id="correctAnswer"></span>
+                </div>
+
+                <div class="analysis" id="analysis"></div>
+
+            </div>
+
+
+            <div class="actions">
+
+                <button
+                    class="secondary-btn"
+                    onclick="skipQuestion()"
+                >
+                    تخطي
+                </button>
+
+                <button
+                    class="main-btn"
+                    id="nextBtn"
+                    onclick="checkAnswer()"
+                >
+                    تحقق من الإجابة
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- RESULTS -->
+
+        <section id="results" class="results">
+
+            <div class="results-title">
+                انتهى الاختبار 🚀
+            </div>
+
+            <div class="result-subtitle">
+                شوف مستواك وأخطاءك بالتفصيل
+            </div>
+
+
+            <div class="score-circle" id="scoreCircle">
+
+                <div>
+                    <div class="score-number" id="finalScore">
+                        0%
+                    </div>
+
+                    <span class="score-label">
+                        SCORE
+                    </span>
+                </div>
+
+            </div>
+
+
+            <div class="result-stats">
+
+                <div class="stat">
+                    <span
+                        class="stat-number"
+                        id="correctCount"
+                    >
+                        0
+                    </span>
+
+                    <span class="stat-label">
+                        إجابات صحيحة
+                    </span>
+                </div>
+
+                <div class="stat">
+                    <span
+                        class="stat-number"
+                        id="wrongCount"
+                    >
+                        0
+                    </span>
+
+                    <span class="stat-label">
+                        أخطاء
+                    </span>
+                </div>
+
+                <div class="stat">
+                    <span
+                        class="stat-number"
+                        id="totalCount"
+                    >
+                        28
+                    </span>
+
+                    <span class="stat-label">
+                        إجمالي
+                    </span>
+                </div>
+
+            </div>
+
+
+            <h3 class="mistakes-title">
+                🔎 تحليل الأخطاء
+            </h3>
+
+            <div id="mistakesList"></div>
+
+
+            <button
+                class="main-btn restart"
+                onclick="restartExam()"
+            >
+                🔄 امتحان جديد
+            </button>
+
+        </section>
+
+    </div>
+
+</div>
+
+
+<script>
+
+/*
+=========================================================
+WORDS FROM THE IMAGE ONLY
+=========================================================
+*/
+
+const words = [
+
+    {
+        ar: "يعيد",
+        en: "bring back"
+    },
+
+    {
+        ar: "يضئ بالأمل",
+        en: "light up"
+    },
+
+    {
+        ar: "لامس وجوههم",
+        en: "touched their faces"
+    },
+
+    {
+        ar: "عبء",
+        en: "burden"
+    },
+
+    {
+        ar: "ابتسم ابتسامة خفيفة",
+        en: "lips curled into a thin smile"
+    },
+
+    {
+        ar: "غير مدرك للكراهية",
+        en: "unaware of the hatred"
+    },
+
+    {
+        ar: "حمل أخبارًا سارة",
+        en: "carried good news"
+    },
+
+    {
+        ar: "أضاء بأمل قاس",
+        en: "lit with cruel hope"
+    },
+
+    {
+        ar: "يسير عبر",
+        en: "walk through"
+    },
+
+    {
+        ar: "قبض يديه",
+        en: "clenched his fists"
+    },
+
+    {
+        ar: "مخلص",
+        en: "loyal"
+    },
+
+    {
+        ar: "لا ينقصه شيء",
+        en: "want for nothing"
+    },
+
+    {
+        ar: "احتمالات لا تنتهي",
+        en: "endless possibilities"
+    },
+
+    {
+        ar: "يضع خطة/ يؤلف",
+        en: "make up"
+    },
+
+    {
+        ar: "همس برقة",
+        en: "whispered softly"
+    },
+
+    {
+        ar: "مساعد أول في واحدة من أرقى السفن",
+        en: "first mate of one of the finest ships"
+    },
+
+    {
+        ar: "تمتم مع نفسه",
+        en: "muttered to himself"
+    },
+
+    {
+        ar: "بسرعة",
+        en: "with speed"
+    },
+
+    {
+        ar: "دق قلبه بسرعة",
+        en: "heart beat faster"
+    },
+
+    {
+        ar: "ينزلق نحو الظلام",
+        en: "slipping into darkness"
+    },
+
+    {
+        ar: "كلمات مليئة بالشر",
+        en: "words heavy with malice"
+    },
+
+    {
+        ar: "عانقه بشدة",
+        en: "held him tightly"
+    },
+
+    {
+        ar: "تحدثوا عنه باحترام",
+        en: "spoke of him with respect"
+    },
+
+    {
+        ar: "يكتب",
+        en: "write down"
+    },
+
+    {
+        ar: "يمسك/ يمسك بشدة",
+        en: "hold on"
+    },
+
+    {
+        ar: "تجمد من الصدمة",
+        en: "stood frozen with shock"
+    },
+
+    {
+        ar: "يتكئ على",
+        en: "lean on"
+    },
+
+    {
+        ar: "دموع في عينيه",
+        en: "tears in his eyes"
+    }
+
+];
+
+
+/*
+=========================================================
+VARIABLES
+=========================================================
+*/
+
+let questions = [];
+let currentIndex = 0;
+let correctAnswers = 0;
+let answered = false;
+
+let mistakes = [];
+
+
+/*
+=========================================================
+DOM
+=========================================================
+*/
+
+const arabicWord = document.getElementById("arabicWord");
+const answerInput = document.getElementById("answerInput");
+const feedback = document.getElementById("feedback");
+
+const feedbackTitle = document.getElementById("feedbackTitle");
+const userAnswer = document.getElementById("userAnswer");
+const correctAnswer = document.getElementById("correctAnswer");
+const analysis = document.getElementById("analysis");
+
+const nextBtn = document.getElementById("nextBtn");
+
+const currentNumber = document.getElementById("currentNumber");
+const progress = document.getElementById("progress");
+
+const liveScore = document.getElementById("liveScore");
+
+const exam = document.getElementById("exam");
+const results = document.getElementById("results");
+
+
+/*
+=========================================================
+SHUFFLE
+=========================================================
+*/
+
+function shuffle(array) {
+
+    const copy = [...array];
+
+    for (let i = copy.length - 1; i > 0; i--) {
+
+        const j = Math.floor(Math.random() * (i + 1));
+
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+
+    }
+
+    return copy;
+}
+
+
+/*
+=========================================================
+START EXAM
+=========================================================
+*/
+
+function startExam() {
+
+    questions = shuffle(words);
+
+    currentIndex = 0;
+    correctAnswers = 0;
+    mistakes = [];
+    answered = false;
+
+    exam.classList.remove("hidden");
+    results.classList.remove("show");
+
+    liveScore.textContent = "0";
+
+    showQuestion();
+}
+
+
+/*
+=========================================================
+SHOW QUESTION
+=========================================================
+*/
+
+function showQuestion() {
+
+    const question = questions[currentIndex];
+
+    arabicWord.textContent = question.ar;
+
+    currentNumber.textContent = currentIndex + 1;
+
+    const percent =
+        (currentIndex / questions.length) * 100;
+
+    progress.style.width = percent + "%";
+
+    answerInput.value = "";
+
+    answerInput.disabled = false;
+
+    feedback.className = "feedback";
+
+    feedback.innerHTML = `
+        <div class="feedback-title" id="feedbackTitle"></div>
+
+        <div class="answer-line user-answer">
+            إجابتك:
+            <span id="userAnswer"></span>
+        </div>
+
+        <div class="answer-line correct-answer">
+            الصحيح:
+            <span id="correctAnswer"></span>
+        </div>
+
+        <div class="analysis" id="analysis"></div>
+    `;
+
+    nextBtn.textContent = "تحقق من الإجابة";
+
+    answered = false;
+
+    setTimeout(() => {
+        answerInput.focus();
+    }, 100);
+}
+
+
+/*
+=========================================================
+NORMALIZE
+=========================================================
+*/
+
+function normalize(text) {
+
+    return text
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, " ");
+
+}
+
+
+/*
+=========================================================
+CHARACTER DIFFERENCE ANALYZER
+=========================================================
+*/
+
+function analyzeAnswer(user, correct) {
+
+    const a = normalize(user);
+    const b = normalize(correct);
+
+    const results = [];
+
+    if (a === b) {
+        return results;
+    }
+
+
+    /*
+    -----------------------------------------------------
+    1. CHECK ADJACENT SWAPS
+    -----------------------------------------------------
+    */
+
+    const maxLength = Math.max(a.length, b.length);
+
+    for (let i = 0; i < maxLength - 1; i++) {
+
+        if (
+            a[i] !== b[i] &&
+            a[i + 1] === b[i] &&
+            a[i] === b[i + 1]
+        ) {
+
+            results.push({
+                type: "swapped",
+                text:
+                    `🔄 بدلت مكان "${a[i]}" و "${a[i + 1]}"`
+            });
+
+        }
+
+    }
+
+
+    /*
+    -----------------------------------------------------
+    2. DYNAMIC PROGRAMMING
+    -----------------------------------------------------
+    */
+
+    const n = a.length;
+    const m = b.length;
+
+    const dp = Array.from(
+        { length: n + 1 },
+        () => Array(m + 1).fill(0)
+    );
+
+    for (let i = 0; i <= n; i++) {
+        dp[i][0] = i;
+    }
+
+    for (let j = 0; j <= m; j++) {
+        dp[0][j] = j;
+    }
+
+
+    for (let i = 1; i <= n; i++) {
+
+        for (let j = 1; j <= m; j++) {
+
+            if (a[i - 1] === b[j - 1]) {
+
+                dp[i][j] = dp[i - 1][j - 1];
+
+            } else {
+
+                dp[i][j] = Math.min(
+
+                    dp[i - 1][j] + 1,
+
+                    dp[i][j - 1] + 1,
+
+                    dp[i - 1][j - 1] + 1
+
+                );
+
+            }
+
+        }
+
+    }
+
+
+    /*
+    -----------------------------------------------------
+    3. BACKTRACK
+    -----------------------------------------------------
+    */
+
+    let i = n;
+    let j = m;
+
+    const operations = [];
+
+    while (i > 0 || j > 0) {
+
+        if (
+            i > 0 &&
+            j > 0 &&
+            a[i - 1] === b[j - 1]
+        ) {
+
+            i--;
+            j--;
+
+        } else {
+
+            const deletion =
+                i > 0 ? dp[i - 1][j] : Infinity;
+
+            const insertion =
+                j > 0 ? dp[i][j - 1] : Infinity;
+
+            const substitution =
+                i > 0 && j > 0
+                    ? dp[i - 1][j - 1]
+                    : Infinity;
+
+
+            const min = Math.min(
+                deletion,
+                insertion,
+                substitution
+            );
+
+
+            if (min === substitution) {
+
+                operations.push({
+                    type: "wrong",
+                    user: a[i - 1],
+                    correct: b[j - 1],
+                    position: j
+                });
+
+                i--;
+                j--;
+
+            } else if (min === deletion) {
+
+                operations.push({
+                    type: "extra",
+                    user: a[i - 1],
+                    position: j
+                });
+
+                i--;
+
+            } else {
+
+                operations.push({
+                    type: "missing",
+                    correct: b[j - 1],
+                    position: j
+                });
+
+                j--;
+
+            }
+
+        }
+
+    }
+
+
+    /*
+    -----------------------------------------------------
+    4. CONVERT OPERATIONS TO FRIENDLY MESSAGES
+    -----------------------------------------------------
+    */
+
+    operations.reverse();
+
+    for (const op of operations) {
+
+        if (op.type === "missing") {
+
+            results.push({
+                type: "missing",
+                text:
+                    `🟡 حرف ناقص: "${op.correct}"`
+            });
+
+        }
+
+        else if (op.type === "extra") {
+
+            results.push({
+                type: "extra",
+                text:
+                    `🔴 حرف زائد: "${op.user}"`
+            });
+
+        }
+
+        else if (op.type === "wrong") {
+
+            results.push({
+                type: "wrong",
+                text:
+                    `❌ كتبت "${op.user}" والصحيح "${op.correct}"`
+            });
+
+        }
+
+    }
+
+
+    /*
+    -----------------------------------------------------
+    REMOVE DUPLICATES
+    -----------------------------------------------------
+    */
+
+    const unique = [];
+
+    for (const item of results) {
+
+        if (
+            !unique.some(
+                x => x.text === item.text
+            )
+        ) {
+
+            unique.push(item);
+
+        }
+
+    }
+
+    return unique;
+}
+
+
+/*
+=========================================================
+CHECK ANSWER
+=========================================================
+*/
+
+function checkAnswer() {
+
+    if (answered) {
+
+        currentIndex++;
+
+        if (currentIndex >= questions.length) {
+
+            showResults();
+
+        } else {
+
+            showQuestion();
+
+        }
+
+        return;
+    }
+
+
+    const question = questions[currentIndex];
+
+    const user = answerInput.value.trim();
+
+    if (!user) {
+
+        answerInput.focus();
+
+        return;
+
+    }
+
+
+    const correct =
+        normalize(user) === normalize(question.en);
+
+
+    answered = true;
+
+    answerInput.disabled = true;
+
+
+    if (correct) {
+
+        correctAnswers++;
+
+        liveScore.textContent = correctAnswers;
+
+        feedback.className =
+            "feedback show correct";
+
+        document.getElementById("feedbackTitle").textContent =
+            "✅ إجابة صحيحة!";
+
+        document.getElementById("userAnswer").textContent =
+            user;
+
+        document.getElementById("correctAnswer").textContent =
+            question.en;
+
+        document.getElementById("analysis").innerHTML =
+            `<span class="error-chip missing">
+                ممتاز، مفيش أي أخطاء 🎯
+             </span>`;
+
+    }
+
+    else {
+
+        const errors =
+            analyzeAnswer(user, question.en);
+
+        mistakes.push({
+            question: question,
+            user: user,
+            errors: errors
+        });
+
+
+        feedback.className =
+            "feedback show wrong";
+
+        document.getElementById("feedbackTitle").textContent =
+            "❌ في شوية أخطاء";
+
+        document.getElementById("userAnswer").textContent =
+            user;
+
+        document.getElementById("correctAnswer").textContent =
+            question.en;
+
+
+        const analysisBox =
+            document.getElementById("analysis");
+
+        if (errors.length === 0) {
+
+            analysisBox.innerHTML =
+                `<span class="error-chip">
+                    راجع ترتيب الحروف والكلمات
+                 </span>`;
+
+        } else {
+
+            analysisBox.innerHTML =
+                errors
+                    .map(error => {
+
+                        let className =
+                            "error-chip";
+
+                        if (error.type === "missing") {
+                            className += " missing";
+                        }
+
+                        if (error.type === "extra") {
+                            className += " extra";
+                        }
+
+                        if (error.type === "swapped") {
+                            className += " swapped";
+                        }
+
+                        return `
+                            <span class="${className}">
+                                ${error.text}
+                            </span>
+                        `;
+
+                    })
+                    .join("");
+
+        }
+
+    }
+
+
+    nextBtn.textContent =
+        currentIndex === questions.length - 1
+            ? "عرض النتيجة 🚀"
+            : "السؤال التالي →";
+
+}
+
+
+/*
+=========================================================
+SKIP
+=========================================================
+*/
+
+function skipQuestion() {
+
+    if (answered) {
+        currentIndex++;
+    } else {
+
+        mistakes.push({
+            question: questions[currentIndex],
+            user: "— لم تتم الإجابة —",
+            errors: [
+                {
+                    type: "extra",
+                    text: "⚠️ تم تخطي السؤال"
+                }
+            ]
+        });
+
+        currentIndex++;
+    }
+
+
+    if (currentIndex >= questions.length) {
+
+        showResults();
+
+    } else {
+
+        showQuestion();
+
+    }
+
+}
+
+
+/*
+=========================================================
+RESULTS
+=========================================================
+*/
+
+function showResults() {
+
+    exam.classList.add("hidden");
+
+    results.classList.add("show");
+
+    const total = questions.length;
+
+    const percentage =
+        Math.round(
+            (correctAnswers / total) * 100
+        );
+
+
+    document.getElementById("finalScore")
+        .textContent = percentage + "%";
+
+    document.getElementById("correctCount")
+        .textContent = correctAnswers;
+
+    document.getElementById("wrongCount")
+        .textContent =
+            total - correctAnswers;
+
+    document.getElementById("totalCount")
+        .textContent = total;
+
+
+    document.getElementById("scoreCircle")
+        .style.setProperty(
+            "--score",
+            percentage + "%"
+        );
+
+
+    const list =
+        document.getElementById("mistakesList");
+
+
+    if (mistakes.length === 0) {
+
+        list.innerHTML = `
+            <div class="mistake-item"
+                 style="text-align:center">
+                🏆🔥
+                <br><br>
+                مفيش ولا غلطة!
+                <br>
+                أنت حافظهم كلهم صح.
+            </div>
+        `;
+
+        return;
+    }
+
+
+    list.innerHTML =
+        mistakes.map(item => {
+
+            const errorHTML =
+                item.errors
+                    .map(error => {
+
+                        let className =
+                            "error-chip";
+
+                        if (error.type === "missing") {
+                            className += " missing";
+                        }
+
+                        if (error.type === "extra") {
+                            className += " extra";
+                        }
+
+                        if (error.type === "swapped") {
+                            className += " swapped";
+                        }
+
+                        return `
+                            <span class="${className}">
+                                ${error.text}
+                            </span>
+                        `;
+
+                    })
+                    .join("");
+
+
+            return `
+                <div class="mistake-item">
+
+                    <div class="mistake-arabic">
+                        ${item.question.ar}
+                    </div>
+
+                    <div class="mistake-en">
+                        ❌ ${escapeHTML(item.user)}
+                        <br>
+                        ✅ ${item.question.en}
+                    </div>
+
+                    <div class="analysis">
+                        ${errorHTML}
+                    </div>
+
+                    <button
+                        class="secondary-btn"
+                        style="margin-top:10px"
+                        onclick="speak('${escapeForSpeech(item.question.en)}')"
+                    >
+                        🔊 اسمع النطق الصحيح
+                    </button>
+
+                </div>
+            `;
+
+        })
+        .join("");
+
+}
+
+
+/*
+=========================================================
+RESTART
+=========================================================
+*/
+
+function restartExam() {
+
+    startExam();
+
+}
+
+
+/*
+=========================================================
+TEXT TO SPEECH
+=========================================================
+*/
+
+function speak(text) {
+
+    if (!("speechSynthesis" in window)) {
+
+        alert(
+            "المتصفح بتاعك مش بيدعم خاصية النطق الصوتي."
+        );
+
+        return;
+
+    }
+
+    window.speechSynthesis.cancel();
+
+    const utterance =
+        new SpeechSynthesisUtterance(text);
+
+    utterance.lang = "en-US";
+
+    utterance.rate = 0.82;
+
+    utterance.pitch = 1;
+
+    window.speechSynthesis.speak(
+        utterance
+    );
+
+}
+
+
+function speakCurrent() {
+
+    const question =
+        questions[currentIndex];
+
+    speak(question.en);
+
+}
+
+
+/*
+=========================================================
+ESCAPE HTML
+=========================================================
+*/
+
+function escapeHTML(text) {
+
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+}
+
+
+function escapeForSpeech(text) {
+
+    return text
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'");
+
+}
+
+
+/*
+=========================================================
+ENTER KEY
+=========================================================
+*/
+
+answerInput.addEventListener(
+    "keydown",
+    function(event) {
+
+        if (event.key === "Enter") {
+
+            checkAnswer();
+
+        }
+
+    }
+);
+
+
+/*
+=========================================================
+START
+=========================================================
+*/
+
+startExam();
+
+</script>
+
+</body>
+</html>
