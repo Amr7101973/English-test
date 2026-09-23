@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<title>Vocabulary Master 3.5</title>
+<title>Vocabulary Master 4.0</title>
 
 <!-- خط واحد يدعم العربي والإنجليزي -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -652,6 +652,55 @@ body {
 .direction-score {
     font-size: 25px;
     font-weight: 800;
+}
+
+.stats-card {
+    margin-top: 18px;
+    padding: 22px;
+    border-radius: 20px;
+    background: rgba(15,23,42,.72);
+    border: 1px solid rgba(255,255,255,.07);
+    backdrop-filter: blur(18px);
+    text-align: right;
+}
+
+.stats-card-title {
+    font-size: 16px;
+    font-weight: 800;
+    margin-bottom: 15px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.stat-box {
+    padding: 15px 12px;
+    border-radius: 14px;
+    background: rgba(255,255,255,.035);
+    border: 1px solid rgba(255,255,255,.055);
+    text-align: center;
+}
+
+.stat-label {
+    display: block;
+    color: #64748b;
+    font-size: 11px;
+    margin-bottom: 7px;
+}
+
+.stat-box strong {
+    display: block;
+    color: #e2e8f0;
+    font-size: 20px;
+}
+
+@media (max-width: 650px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 .result-list {
@@ -2517,6 +2566,37 @@ body {
         </div>
 
 
+        <div class="stats-card" id="statsCard">
+
+            <div class="stats-card-title">📊 إحصائياتك</div>
+
+            <div class="stats-grid">
+
+                <div class="stat-box">
+                    <span class="stat-label">المحاولات</span>
+                    <strong id="statAttempts">0</strong>
+                </div>
+
+                <div class="stat-box">
+                    <span class="stat-label">أفضل نتيجة</span>
+                    <strong id="statBest">0%</strong>
+                </div>
+
+                <div class="stat-box">
+                    <span class="stat-label">متوسط النتائج</span>
+                    <strong id="statAverage">0%</strong>
+                </div>
+
+                <div class="stat-box">
+                    <span class="stat-label">آخر نتيجة</span>
+                    <strong id="statLast">0%</strong>
+                </div>
+
+            </div>
+
+        </div>
+
+
         <div
             class="result-list"
             id="resultList">
@@ -3003,7 +3083,12 @@ document.addEventListener("keydown", event => {
 
     if (event.key === "Escape") {
 
-        hideExitConfirm();
+        const modal =
+            document.getElementById("exitModal");
+
+        if (modal && modal.classList.contains("open")) {
+            hideExitConfirm();
+        }
     }
 });
 
@@ -3337,107 +3422,217 @@ function analyzeEnglish(user, correct) {
 
     const u =
         normalizeEnglish(user)
-        .replace(/\s/g, "");
+        .replace(/\\s/g, "");
 
     const c =
         normalizeEnglish(correct)
-        .replace(/\s/g, "");
-
+        .replace(/\\s/g, "");
 
     if (u === c) {
-
         return "الإجابة صحيحة تمامًا.";
     }
 
-
     /*
-       Adjacent swap
+       First detect a clean adjacent swap. This gives a much
+       more useful explanation than treating the two letters
+       as unrelated edits.
     */
-
     if (u.length === c.length) {
 
-        let differences = [];
+        for (let i = 0; i < c.length - 1; i++) {
 
-        for (let i = 0; i < u.length; i++) {
+            if (
+                u[i] === c[i + 1] &&
+                u[i + 1] === c[i]
+            ) {
 
-            if (u[i] !== c[i]) {
+                let sameBefore = true;
+                let sameAfter = true;
 
-                differences.push(i);
+                for (let j = 0; j < i; j++) {
+                    if (u[j] !== c[j]) {
+                        sameBefore = false;
+                        break;
+                    }
+                }
+
+                for (let j = i + 2; j < c.length; j++) {
+                    if (u[j] !== c[j]) {
+                        sameAfter = false;
+                        break;
+                    }
+                }
+
+                if (sameBefore && sameAfter) {
+
+                    return (
+                        `🔄 حرفين متبدلين في الترتيب: "${u[i]}${u[i + 1]}" بدل "${c[i]}${c[i + 1]}".`
+                    );
+                }
             }
         }
-
-
-        if (
-            differences.length === 2 &&
-            differences[1] === differences[0] + 1 &&
-            u[differences[0]] === c[differences[1]] &&
-            u[differences[1]] === c[differences[0]]
-        ) {
-
-            return `
-                🔄 فيه حرفين متبدلين في الترتيب:
-                <b>${u[differences[0]]}${u[differences[1]]}</b>
-                بدل
-                <b>${c[differences[0]]}${c[differences[1]]}</b>
-            `;
-        }
     }
 
-
-    /*
-       Missing letters
-    */
+    const alignment =
+        alignEnglish(u, c);
 
     const missing = [];
-
     const extra = [];
+    const wrong = [];
 
+    alignment.forEach(op => {
 
-    for (const char of c) {
-
-        if (!u.includes(char)) {
-
-            missing.push(char);
+        if (op.type === "missing") {
+            missing.push(op.correct);
         }
-    }
 
-
-    for (const char of u) {
-
-        if (!c.includes(char)) {
-
-            extra.push(char);
+        else if (op.type === "extra") {
+            extra.push(op.user);
         }
-    }
 
-
-    /*
-       Levenshtein
-    */
+        else if (op.type === "wrong") {
+            wrong.push(`"${op.user}"→"${op.correct}"`);
+        }
+    });
 
     const distance =
         levenshtein(u, c);
 
-
-    let message =
-        `❌ فيه اختلاف في ${distance} حرف/تعديل.`;
-
+    const parts = [
+        `❌ فيه ${distance} تعديل${distance === 1 ? "" : "ات"} تقريبًا.`
+    ];
 
     if (missing.length) {
-
-        message +=
-            `<br>➕ حروف ناقصة: <b>${missing.join(", ")}</b>`;
+        parts.push(`➕ حروف ناقصة: ${[...new Set(missing)].join(", ")}.`);
     }
-
 
     if (extra.length) {
-
-        message +=
-            `<br>➖ حروف زيادة/غلط: <b>${extra.join(", ")}</b>`;
+        parts.push(`➖ حروف زيادة: ${[...new Set(extra)].join(", ")}.`);
     }
 
+    if (wrong.length) {
+        parts.push(`🔤 حروف مكتوبة غلط: ${wrong.join("، ")}.`);
+    }
 
-    return message;
+    if (
+        !missing.length &&
+        !extra.length &&
+        !wrong.length
+    ) {
+        parts.push("راجع ترتيب الحروف والتهجئة.");
+    }
+
+    return parts.join("\n");
+}
+
+
+/* =========================================================
+   ENGLISH ALIGNMENT
+   Uses dynamic programming to identify the actual edit
+   path instead of only comparing which characters exist.
+========================================================= */
+
+function alignEnglish(user, correct) {
+
+    const rows = correct.length + 1;
+    const cols = user.length + 1;
+
+    const matrix =
+        Array.from(
+            { length: rows },
+            () => Array(cols).fill(0)
+        );
+
+    for (let i = 0; i < rows; i++) {
+        matrix[i][0] = i;
+    }
+
+    for (let j = 0; j < cols; j++) {
+        matrix[0][j] = j;
+    }
+
+    for (let i = 1; i < rows; i++) {
+
+        for (let j = 1; j < cols; j++) {
+
+            const substitution =
+                matrix[i - 1][j - 1] +
+                (correct[i - 1] === user[j - 1] ? 0 : 1);
+
+            const insertion =
+                matrix[i][j - 1] + 1;
+
+            const deletion =
+                matrix[i - 1][j] + 1;
+
+            matrix[i][j] =
+                Math.min(
+                    substitution,
+                    insertion,
+                    deletion
+                );
+        }
+    }
+
+    const operations = [];
+
+    let i = correct.length;
+    let j = user.length;
+
+    while (i > 0 || j > 0) {
+
+        if (
+            i > 0 &&
+            j > 0 &&
+            correct[i - 1] === user[j - 1] &&
+            matrix[i][j] === matrix[i - 1][j - 1]
+        ) {
+
+            i--;
+            j--;
+            continue;
+        }
+
+        if (
+            i > 0 &&
+            j > 0 &&
+            matrix[i][j] === matrix[i - 1][j - 1] + 1
+        ) {
+
+            operations.unshift({
+                type: "wrong",
+                user: user[j - 1],
+                correct: correct[i - 1]
+            });
+
+            i--;
+            j--;
+            continue;
+        }
+
+        if (
+            j > 0 &&
+            matrix[i][j] === matrix[i][j - 1] + 1
+        ) {
+
+            operations.unshift({
+                type: "extra",
+                user: user[j - 1]
+            });
+
+            j--;
+            continue;
+        }
+
+        operations.unshift({
+            type: "missing",
+            correct: correct[i - 1]
+        });
+
+        i--;
+    }
+
+    return operations;
 }
 
 
@@ -3653,6 +3848,149 @@ function speakCurrent() {
 
 
 /* =========================================================
+   PERSISTENT STATISTICS
+========================================================= */
+
+const STATS_KEY = "vocabularyMasterStats_v1";
+
+function loadStats() {
+
+    try {
+
+        const saved =
+            localStorage.getItem(STATS_KEY);
+
+        if (!saved) {
+            return {
+                attempts: 0,
+                bestPercent: 0,
+                averagePercent: 0,
+                lastPercent: 0
+            };
+        }
+
+        const stats = JSON.parse(saved);
+
+        return {
+            attempts: Number(stats.attempts) || 0,
+            bestPercent: Number(stats.bestPercent) || 0,
+            averagePercent: Number(stats.averagePercent) || 0,
+            lastPercent: Number(stats.lastPercent) || 0
+        };
+
+    }
+
+    catch (error) {
+
+        console.warn(
+            "Could not load saved statistics:",
+            error
+        );
+
+        return {
+            attempts: 0,
+            bestPercent: 0,
+            averagePercent: 0,
+            lastPercent: 0
+        };
+    }
+}
+
+
+function saveAttemptStats(percent) {
+
+    const current =
+        loadStats();
+
+    const attempts =
+        current.attempts + 1;
+
+    const averagePercent =
+        Math.round(
+            (
+                (current.averagePercent * current.attempts) +
+                percent
+            ) / attempts
+        );
+
+    const updated = {
+
+        attempts,
+
+        bestPercent:
+            Math.max(
+                current.bestPercent,
+                percent
+            ),
+
+        averagePercent,
+
+        lastPercent: percent
+    };
+
+    try {
+
+        localStorage.setItem(
+            STATS_KEY,
+            JSON.stringify(updated)
+        );
+
+    }
+
+    catch (error) {
+
+        console.warn(
+            "Could not save statistics:",
+            error
+        );
+    }
+
+    renderStats(updated);
+
+    return updated;
+}
+
+
+function renderStats(stats = loadStats()) {
+
+    const attempts =
+        document.getElementById("statAttempts");
+
+    const best =
+        document.getElementById("statBest");
+
+    const average =
+        document.getElementById("statAverage");
+
+    const last =
+        document.getElementById("statLast");
+
+    if (attempts) {
+        attempts.textContent =
+            stats.attempts;
+    }
+
+    if (best) {
+        best.textContent =
+            `${stats.bestPercent}%`;
+    }
+
+    if (average) {
+        average.textContent =
+            `${stats.averagePercent}%`;
+    }
+
+    if (last) {
+        last.textContent =
+            `${stats.lastPercent}%`;
+    }
+}
+
+
+renderStats();
+
+
+/* =========================================================
    FINISH
 ========================================================= */
 
@@ -3715,6 +4053,9 @@ function finishExam() {
         Math.round(
             (totalCorrect / total) * 100
         );
+
+
+    saveAttemptStats(percent);
 
 
     document.getElementById(
@@ -3789,18 +4130,14 @@ function renderResults() {
             "resultList"
         );
 
-
     container.innerHTML = "";
-
 
     results.forEach((result, index) => {
 
         if (!result) return;
 
-
         const item =
             document.createElement("div");
-
 
         item.className =
             `result-item ${
@@ -3809,77 +4146,85 @@ function renderResults() {
                     : "wrong"
             }`;
 
+        const word =
+            document.createElement("div");
 
-        let analysis = "";
+        word.className = "result-word";
 
+        word.textContent =
+            `${index + 1}. ${
+                result.direction === "ar-en"
+                    ? result.ar
+                    : result.en
+            }`;
+
+        const answer =
+            document.createElement("div");
+
+        answer.className = "result-answer";
+
+        const userLabel =
+            document.createTextNode("إجابتك: ");
+
+        const userValue =
+            document.createElement("b");
+
+        userValue.dir =
+            result.direction === "ar-en"
+                ? "ltr"
+                : "rtl";
+
+        userValue.textContent =
+            result.userAnswer ||
+            "لم تتم الإجابة";
+
+        const correctLabel =
+            document.createTextNode("الإجابة الصحيحة: ");
+
+        const correctValue =
+            document.createElement("b");
+
+        correctValue.dir =
+            result.direction === "ar-en"
+                ? "ltr"
+                : "rtl";
+
+        correctValue.textContent =
+            result.correctAnswer;
+
+        answer.appendChild(userLabel);
+        answer.appendChild(userValue);
+        answer.appendChild(document.createElement("br"));
+        answer.appendChild(correctLabel);
+        answer.appendChild(correctValue);
+
+        item.appendChild(word);
+        item.appendChild(answer);
 
         if (
             !result.correct &&
             result.direction === "ar-en"
         ) {
 
-            analysis =
+            const analysis =
+                document.createElement("div");
+
+            analysis.className =
+                "error-analysis";
+
+            analysis.style.whiteSpace =
+                "pre-line";
+
+            analysis.textContent =
                 analyzeEnglish(
                     result.userAnswer,
                     result.correctAnswer
                 );
 
+            item.appendChild(analysis);
         }
 
-
-        item.innerHTML = `
-
-            <div class="result-word">
-
-                ${index + 1}.
-                ${
-                    result.direction === "ar-en"
-                        ? result.ar
-                        : result.en
-                }
-
-            </div>
-
-            <div class="result-answer">
-
-                إجابتك:
-                <b dir="${
-                    result.direction === "ar-en"
-                        ? "ltr"
-                        : "rtl"
-                }">
-                    ${
-                        result.userAnswer ||
-                        "لم تتم الإجابة"
-                    }
-                </b>
-
-                <br>
-
-                الإجابة الصحيحة:
-                <b dir="${
-                    result.direction === "ar-en"
-                        ? "ltr"
-                        : "rtl"
-                }">
-                    ${result.correctAnswer}
-                </b>
-
-            </div>
-
-            ${
-                analysis
-                    ? `<div class="error-analysis">
-                        ${analysis}
-                       </div>`
-                    : ""
-            }
-
-        `;
-
-
         container.appendChild(item);
-
     });
 }
 
