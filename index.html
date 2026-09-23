@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<title>Vocabulary Master 4.0</title>
+<title>Vocabulary Master 4.1</title>
 
 <!-- خط واحد يدعم العربي والإنجليزي -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -3697,21 +3697,28 @@ function levenshtein(a, b) {
 ========================================================= */
 
 let availableVoices = [];
+let speechReady = false;
+let speechRetryTimer = null;
 
 function loadSpeechVoices() {
 
     if (!("speechSynthesis" in window)) {
-        return;
+        availableVoices = [];
+        return [];
     }
 
     availableVoices =
-        window.speechSynthesis.getVoices();
+        window.speechSynthesis.getVoices() || [];
+
+    speechReady = availableVoices.length > 0;
+
+    return availableVoices;
 }
 
 
 /*
-   Mobile browsers sometimes populate the voice list
-   after the page has already loaded.
+   Android/Chrome can populate the voice list asynchronously.
+   MDN recommends handling voiceschanged for this case.
 */
 if ("speechSynthesis" in window) {
 
@@ -3729,27 +3736,134 @@ function getEnglishVoice() {
     const voices =
         availableVoices.length
             ? availableVoices
-            : window.speechSynthesis.getVoices();
+            : loadSpeechVoices();
 
     if (!voices.length) {
         return null;
     }
 
+    /*
+       Prefer an English voice that is marked as default.
+       If there isn't one, use the most common English locales.
+    */
     return (
         voices.find(voice =>
-            voice.lang.toLowerCase() === "en-us"
+            voice.default &&
+            /^en(-|_)/i.test(voice.lang || "")
         ) ||
 
         voices.find(voice =>
-            voice.lang.toLowerCase() === "en-gb"
+            /^en-US$/i.test(voice.lang || "")
         ) ||
 
         voices.find(voice =>
-            voice.lang.toLowerCase().startsWith("en")
+            /^en-GB$/i.test(voice.lang || "")
+        ) ||
+
+        voices.find(voice =>
+            /^en/i.test(voice.lang || "")
         ) ||
 
         null
     );
+}
+
+
+function updateSpeakerState(speaker, speaking) {
+
+    if (!speaker) return;
+
+    speaker.classList.toggle(
+        "speaking",
+        speaking
+    );
+
+    speaker.setAttribute(
+        "aria-label",
+        speaking
+            ? "إيقاف النطق"
+            : "تشغيل النطق الإنجليزي"
+    );
+}
+
+
+/*
+   Wait briefly for Android to expose its voices.
+   We do NOT require a voice to exist: the browser can still
+   use its default synthesizer when utterance.voice is null.
+*/
+function waitForSpeechVoices(timeout = 900) {
+
+    if (!("speechSynthesis" in window)) {
+        return Promise.resolve([]);
+    }
+
+    const current =
+        loadSpeechVoices();
+
+    if (current.length) {
+        return Promise.resolve(current);
+    }
+
+    return new Promise(resolve => {
+
+        let finished = false;
+
+        const done = () => {
+
+            if (finished) return;
+
+            finished = true;
+
+            clearTimeout(timer);
+
+            window.speechSynthesis.removeEventListener(
+                "voiceschanged",
+                onVoicesChanged
+            );
+
+            resolve(loadSpeechVoices());
+        };
+
+        const onVoicesChanged = () => done();
+
+        const timer =
+            setTimeout(done, timeout);
+
+        window.speechSynthesis.addEventListener(
+            "voiceschanged",
+            onVoicesChanged
+        );
+    });
+}
+
+
+function createEnglishUtterance(text, forceDefaultVoice = false) {
+
+    const utterance =
+        new SpeechSynthesisUtterance(text);
+
+    utterance.lang = "en-US";
+    utterance.rate = 0.78;
+    utterance.pitch = 1;
+
+    /*
+       On some Android builds explicitly assigning a voice
+       can fail even though the default TTS engine works.
+       Retry #2 therefore deliberately leaves voice unset.
+    */
+    if (!forceDefaultVoice) {
+
+        const voice =
+            getEnglishVoice();
+
+        if (voice) {
+            utterance.voice = voice;
+            utterance.lang = voice.lang || "en-US";
+        }
+    }
+
+    return utterance;
 }
 
 
@@ -3771,79 +3885,195 @@ function speakCurrent() {
     }
 
     const text = q.en;
-    const speaker = document.getElementById("speakerBtn");
-    const synth = window.speechSynthesis;
+    const speaker =
+        document.getElementById("speakerBtn");
 
-    /*
-       Mobile-safe speech flow:
-       - cancel any queued speech
-       - resume the engine if it is paused
-       - refresh voices because Android may load them late
-       - always keep en-US as a fallback even when no voice
-         is returned by getVoices()
-    */
+    const synth =
+        window.speechSynthesis;
 
-    synth.cancel();
-    synth.resume();
-    loadSpeechVoices();
-
-    const utterance =
-        new SpeechSynthesisUtterance(text);
-
-    utterance.lang = "en-US";
-    utterance.rate = 0.78;
-    utterance.pitch = 1;
-
-    const voice = getEnglishVoice();
-
-    if (voice) {
-        utterance.voice = voice;
-        utterance.lang = voice.lang || "en-US";
+    if (speechRetryTimer) {
+        clearTimeout(speechRetryTimer);
+        speechRetryTimer = null;
     }
 
-    utterance.onstart = () => {
-        if (speaker) {
-            speaker.classList.add("speaking");
-            speaker.setAttribute("aria-label", "إيقاف النطق");
-        }
-    };
+    /*
+       If the same button is pressed while speaking,
+       stop it. This action stays inside the user's click.
+    */
+    if (synth.speaking || synth.pending) {
 
-    utterance.onend = () => {
-        if (speaker) {
-            speaker.classList.remove("speaking");
-            speaker.setAttribute("aria-label", "تشغيل النطق الإنجليزي");
-        }
-    };
+        synth.cancel();
 
-    utterance.onpause = () => {
-        if (speaker) {
-            speaker.classList.remove("speaking");
-        }
-    };
-
-    utterance.onerror = (event) => {
-        if (speaker) {
-            speaker.classList.remove("speaking");
-            speaker.setAttribute("aria-label", "تشغيل النطق الإنجليزي");
-        }
-
-        console.warn(
-            "Speech synthesis error:",
-            event && event.error ? event.error : "unknown"
+        updateSpeakerState(
+            speaker,
+            false
         );
-    };
 
-    if (speaker) {
-        speaker.classList.add("speaking");
+        return;
     }
 
+    updateSpeakerState(
+        speaker,
+        true
+    );
+
     /*
-       resume() is intentionally called again immediately
-       before speak(). This helps Chromium/Android recover
-       from a suspended speech engine.
+       Do not assign a voice until Android has had a chance
+       to populate getVoices(). This is one of the common
+       mobile-specific differences in Web Speech API behavior.
     */
-    synth.resume();
-    synth.speak(utterance);
+    waitForSpeechVoices(900)
+        .then(() => {
+
+            /*
+               cancel() is only used when there is actually
+               queued speech. Avoiding an unconditional
+               cancel()+speak() pair improves Android reliability.
+            */
+            if (synth.speaking || synth.pending) {
+                synth.cancel();
+            }
+
+            synth.resume();
+
+            const utterance =
+                createEnglishUtterance(
+                    text,
+                    false
+                );
+
+            let retried =
+                false;
+
+            const finish =
+                () => {
+                    updateSpeakerState(
+                        speaker,
+                        false
+                    );
+                };
+
+            utterance.onstart =
+                () => {
+                    updateSpeakerState(
+                        speaker,
+                        true
+                    );
+                };
+
+            utterance.onend =
+                finish;
+
+            utterance.onpause =
+                finish;
+
+            utterance.onerror =
+                event => {
+
+                    console.warn(
+                        "Speech synthesis error:",
+                        event && event.error
+                            ? event.error
+                            : "unknown"
+                    );
+
+                    /*
+                       Retry once with the browser's DEFAULT
+                       voice. This specifically handles cases
+                       where an explicitly selected Android
+                       voice is unavailable.
+                    */
+                    if (!retried) {
+
+                        retried = true;
+
+                        speechRetryTimer =
+                            setTimeout(() => {
+
+                                speechRetryTimer =
+                                    null;
+
+                                synth.cancel();
+                                synth.resume();
+
+                                const retry =
+                                    createEnglishUtterance(
+                                        text,
+                                        true
+                                    );
+
+                                retry.onstart =
+                                    () => {
+                                        updateSpeakerState(
+                                            speaker,
+                                            true
+                                        );
+                                    };
+
+                                retry.onend =
+                                    finish;
+
+                                retry.onpause =
+                                    finish;
+
+                                retry.onerror =
+                                    retryError => {
+
+                                        console.warn(
+                                            "Speech retry error:",
+                                            retryError &&
+                                            retryError.error
+                                                ? retryError.error
+                                                : "unknown"
+                                        );
+
+                                        finish();
+
+                                        alert(
+                                            "النطق الصوتي مش متاح على الجهاز حاليًا. تأكد إن محرك تحويل النص إلى كلام (TTS) شغال في إعدادات الموبايل."
+                                        );
+                                    };
+
+                                synth.speak(retry);
+
+                            }, 120);
+
+                        return;
+                    }
+
+                    finish();
+                };
+
+            /*
+               Important: speak() happens from the original
+               button flow after a very short voice-loading
+               phase, and no artificial audio element is used.
+            */
+            synth.resume();
+            synth.speak(utterance);
+        })
+        .catch(error => {
+
+            console.warn(
+                "Speech initialization failed:",
+                error
+            );
+
+            finishSpeechFallback();
+        });
+
+
+    function finishSpeechFallback() {
+
+        updateSpeakerState(
+            speaker,
+            false
+        );
+
+        alert(
+            "تعذر تشغيل النطق. تأكد من تفعيل محرك TTS في الموبايل."
+        );
+    }
 }
 
 
