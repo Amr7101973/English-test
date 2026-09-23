@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<title>Vocabulary Master 3.1</title>
+<title>Vocabulary Master 3.5</title>
 
 <!-- خط واحد يدعم العربي والإنجليزي -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2555,7 +2555,7 @@ body {
         <div class="exit-modal-content">
 
             <h2 id="exitModalTitle">
-                هل أنت متأكد من الخروج؟
+                هل أنت متأكد من الخروج من الاختبار؟
             </h2>
 
             <p>
@@ -3565,7 +3565,6 @@ function speakCurrent() {
 
     if (!q) return;
 
-
     if (!("speechSynthesis" in window) ||
         !("SpeechSynthesisUtterance" in window)) {
 
@@ -3576,117 +3575,80 @@ function speakCurrent() {
         return;
     }
 
-
     const text = q.en;
-
-    const speaker =
-        document.getElementById("speakerBtn");
-
+    const speaker = document.getElementById("speakerBtn");
+    const synth = window.speechSynthesis;
 
     /*
-       Keep this function directly inside the click
-       handler. This is important on mobile browsers
-       that require speech to start from a user gesture.
+       Mobile-safe speech flow:
+       - cancel any queued speech
+       - resume the engine if it is paused
+       - refresh voices because Android may load them late
+       - always keep en-US as a fallback even when no voice
+         is returned by getVoices()
     */
 
-    window.speechSynthesis.cancel();
-
+    synth.cancel();
+    synth.resume();
+    loadSpeechVoices();
 
     const utterance =
         new SpeechSynthesisUtterance(text);
-
 
     utterance.lang = "en-US";
     utterance.rate = 0.78;
     utterance.pitch = 1;
 
-
-    const voice =
-        getEnglishVoice();
+    const voice = getEnglishVoice();
 
     if (voice) {
         utterance.voice = voice;
-        utterance.lang = voice.lang;
+        utterance.lang = voice.lang || "en-US";
     }
 
-
     utterance.onstart = () => {
-
         if (speaker) {
             speaker.classList.add("speaking");
+            speaker.setAttribute("aria-label", "إيقاف النطق");
         }
     };
-
 
     utterance.onend = () => {
+        if (speaker) {
+            speaker.classList.remove("speaking");
+            speaker.setAttribute("aria-label", "تشغيل النطق الإنجليزي");
+        }
+    };
 
+    utterance.onpause = () => {
         if (speaker) {
             speaker.classList.remove("speaking");
         }
     };
 
-
-    utterance.onerror = () => {
-
+    utterance.onerror = (event) => {
         if (speaker) {
             speaker.classList.remove("speaking");
+            speaker.setAttribute("aria-label", "تشغيل النطق الإنجليزي");
         }
 
-        /*
-           A second immediate attempt helps on some
-           mobile Chromium builds when the first voice
-           instance has not been initialized yet.
-        */
-
-        setTimeout(() => {
-
-            const retry =
-                new SpeechSynthesisUtterance(text);
-
-            retry.lang = "en-US";
-            retry.rate = 0.78;
-            retry.pitch = 1;
-
-            const retryVoice =
-                getEnglishVoice();
-
-            if (retryVoice) {
-                retry.voice = retryVoice;
-                retry.lang = retryVoice.lang;
-            }
-
-            retry.onend = () => {
-
-                if (speaker) {
-                    speaker.classList.remove("speaking");
-                }
-            };
-
-            retry.onerror = () => {
-
-                if (speaker) {
-                    speaker.classList.remove("speaking");
-                }
-            };
-
-            if (speaker) {
-                speaker.classList.add("speaking");
-            }
-
-            window.speechSynthesis.speak(retry);
-
-        }, 80);
+        console.warn(
+            "Speech synthesis error:",
+            event && event.error ? event.error : "unknown"
+        );
     };
-
 
     if (speaker) {
         speaker.classList.add("speaking");
     }
 
-
-    window.speechSynthesis.speak(
-        utterance
-    );
+    /*
+       resume() is intentionally called again immediately
+       before speak(). This helps Chromium/Android recover
+       from a suspended speech engine.
+    */
+    synth.resume();
+    synth.speak(utterance);
 }
 
 
