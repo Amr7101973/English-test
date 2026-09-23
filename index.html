@@ -157,7 +157,6 @@ body {
         linear-gradient(90deg, #fff, #a5b4fc, #67e8f9);
 
     -webkit-background-clip: text;
-   background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -619,7 +618,6 @@ body {
         linear-gradient(90deg, #818cf8, #67e8f9);
 
     -webkit-background-clip: text;
-   -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -944,12 +942,7 @@ body {
 .hero-eyebrow span{width:22px;height:1px;background:linear-gradient(90deg,transparent,#475569)}
 .hero-eyebrow span:last-child{background:linear-gradient(90deg,#475569,transparent)}
 .hero h1{font-size:clamp(42px,6vw,68px);line-height:1.05;font-weight:800;letter-spacing:-2px;color:#f8fafc;margin:0}
-.hero h1 strong {
-    background: linear-gradient(100deg, #818cf8, #67e8f9);
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
+.hero h1 strong{background:linear-gradient(100deg,#818cf8,#67e8f9);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .hero>p{color:#94a3b8;font-size:16px;margin-top:15px}
 .word-count{margin-top:22px;display:inline-flex;align-items:center;gap:10px;padding:7px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.07);background:rgba(15,23,42,.55);color:#64748b;font-size:10px;font-weight:800;letter-spacing:1.5px}
 .count-number{color:#a5b4fc;font-size:13px}
@@ -1731,6 +1724,122 @@ body {
     }
 }
 
+
+/* =========================================================
+   3.3 — EXIT EXAM BUTTON
+========================================================= */
+
+.exam-top {
+    align-items: center;
+}
+
+.exam-top-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.exit-exam {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+
+    min-height: 38px;
+    padding: 0 12px;
+
+    border-radius: 11px;
+
+    border: 1px solid rgba(248,113,113,.13);
+
+    background: rgba(239,68,68,.045);
+
+    color: #94a3b8;
+
+    font-family: "Noto Sans Arabic", Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 800;
+
+    cursor: pointer;
+
+    transition:
+        transform .18s ease,
+        color .18s ease,
+        background .18s ease,
+        border-color .18s ease;
+}
+
+.exit-icon {
+    width: 21px;
+    height: 21px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 7px;
+
+    background: rgba(239,68,68,.08);
+
+    color: #f87171;
+
+    font-size: 20px;
+    line-height: 1;
+
+    font-family: Arial, sans-serif;
+}
+
+.exit-exam:hover {
+    transform: translateY(-2px);
+
+    color: #fecaca;
+
+    background: rgba(239,68,68,.10);
+
+    border-color: rgba(248,113,113,.30);
+}
+
+.exit-exam:active {
+    transform: scale(.95);
+}
+
+@media (max-width: 650px) {
+
+    .exam-top-right {
+        gap: 7px;
+        min-width: 0;
+    }
+
+    .exit-exam {
+        min-height: 35px;
+        padding: 0 9px;
+        border-radius: 10px;
+        font-size: 10px;
+        flex-shrink: 0;
+    }
+
+    .exit-icon {
+        width: 19px;
+        height: 19px;
+        font-size: 18px;
+    }
+
+    .mode-badge {
+        max-width: none;
+    }
+}
+
+@media (max-width: 380px) {
+
+    .exit-exam {
+        padding: 0 7px;
+    }
+
+    .exit-exam > span:last-child {
+        display: none;
+    }
+}
+
 </style>
 </head>
 
@@ -2044,13 +2153,28 @@ body {
 
                 <div class="exam-top">
 
-                    <div class="mode-badge" id="modeBadge">
-                        🧠 عربي → إنجليزي
+                    <div class="exam-top-right">
+
+                        <div class="mode-badge" id="modeBadge">
+                            🧠 عربي → إنجليزي
+                        </div>
+
+                        <div class="progress-text" id="progressText">
+                            السؤال 1 من 28
+                        </div>
+
                     </div>
 
-                    <div class="progress-text" id="progressText">
-                        السؤال 1 من 28
-                    </div>
+                    <button
+                        class="exit-exam"
+                        onclick="exitExam()"
+                        type="button"
+                        title="الخروج والعودة لاختيار طريقة أخرى">
+
+                        <span class="exit-icon">×</span>
+                        <span>خروج</span>
+
+                    </button>
 
                 </div>
 
@@ -2387,6 +2511,23 @@ const modeBadge =
    START EXAM
 ========================================================= */
 
+function shuffleArray(array) {
+
+    const shuffled = [...array];
+
+    for (let i = shuffled.length - 1; i > 0; i--) {
+
+        const j =
+            Math.floor(Math.random() * (i + 1));
+
+        [shuffled[i], shuffled[j]] =
+            [shuffled[j], shuffled[i]];
+    }
+
+    return shuffled;
+}
+
+
 function startExam(selectedMode) {
 
     mode = selectedMode;
@@ -2398,35 +2539,45 @@ function startExam(selectedMode) {
     results = [];
 
     /*
-       Create questions
+       IMPORTANT:
+       The vocabulary keeps the exact source order in the
+       vocabulary array, but the exam itself is randomized
+       every time it starts.
     */
+
+    const shuffledVocabulary =
+        shuffleArray(vocabulary);
+
 
     if (mode === "ar-en") {
 
-        questions = vocabulary.map(item => ({
-            ...item,
-            direction: "ar-en"
-        }));
+        questions =
+            shuffledVocabulary.map(item => ({
+                ...item,
+                direction: "ar-en"
+            }));
 
     }
 
     else if (mode === "en-ar") {
 
-        questions = vocabulary.map(item => ({
-            ...item,
-            direction: "en-ar"
-        }));
+        questions =
+            shuffledVocabulary.map(item => ({
+                ...item,
+                direction: "en-ar"
+            }));
 
     }
 
     else {
 
-        const shuffled =
-            [...vocabulary]
-            .sort(() => Math.random() - 0.5);
+        /*
+           Exactly 14 Arabic → English
+           and 14 English → Arabic.
+        */
 
         const arEn =
-            shuffled
+            shuffledVocabulary
             .slice(0, 14)
             .map(item => ({
                 ...item,
@@ -2434,7 +2585,7 @@ function startExam(selectedMode) {
             }));
 
         const enAr =
-            shuffled
+            shuffledVocabulary
             .slice(14)
             .map(item => ({
                 ...item,
@@ -2442,8 +2593,10 @@ function startExam(selectedMode) {
             }));
 
         questions =
-            [...arEn, ...enAr]
-            .sort(() => Math.random() - 0.5);
+            shuffleArray([
+                ...arEn,
+                ...enAr
+            ]);
     }
 
 
@@ -2461,6 +2614,45 @@ function startExam(selectedMode) {
     createQuestionGrid();
 
     showQuestion();
+}
+
+
+/* =========================================================
+   EXIT EXAM
+========================================================= */
+
+function exitExam() {
+
+    /*
+       Leave the current exam immediately and return
+       to the mode-selection screen.
+    */
+
+    if ("speechSynthesis" in window) {
+
+        speechSynthesis.cancel();
+    }
+
+    mode = null;
+
+    questions = [];
+
+    currentIndex = 0;
+
+    answered = [];
+
+    results = [];
+
+    examScreen.style.display = "none";
+
+    resultsScreen.style.display = "none";
+
+    modeScreen.style.display = "flex";
+
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
 }
 
 
