@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<title>Vocabulary Master 5.0</title>
+<title>Vocabulary Master 5.1</title>
 
 <!-- خط واحد يدعم العربي والإنجليزي -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -439,6 +439,14 @@ body {
 
 .speaker:active {
     transform: scale(.94);
+}
+
+/*
+   Visibility is controlled by JavaScript state.
+   [hidden] must win over the normal .speaker display.
+*/
+.speaker[hidden] {
+    display: none !important;
 }
 
 /* ANSWER */
@@ -2876,6 +2884,34 @@ if (vocabularyCount) {
 }
 
 
+const speakerButton =
+    document.getElementById("speakerBtn");
+
+function setSpeakerVisibility(visible) {
+
+    if (!speakerButton) return;
+
+    speakerButton.hidden = !visible;
+
+    speakerButton.setAttribute(
+        "aria-hidden",
+        visible ? "false" : "true"
+    );
+
+    speakerButton.tabIndex =
+        visible ? 0 : -1;
+
+    if (!visible) {
+
+        stopCurrentAudio();
+
+        if ("speechSynthesis" in window) {
+            window.speechSynthesis.cancel();
+        }
+    }
+}
+
+
 /* =========================================================
    START EXAM
 ========================================================= */
@@ -2900,6 +2936,12 @@ function shuffleArray(array) {
 function startExam(selectedMode) {
 
     mode = selectedMode;
+
+    /*
+       Every supported mode is an exam mode.
+       The speaker is therefore unavailable for the entire exam.
+    */
+    setSpeakerVisibility(false);
 
     currentIndex = 0;
 
@@ -3039,6 +3081,8 @@ function hideExitConfirm() {
 
 
 function confirmExitExam() {
+
+    setSpeakerVisibility(false);
 
     hideExitConfirm();
 
@@ -4278,6 +4322,7 @@ renderStats();
 function finishExam() {
 
     stopCurrentAudio();
+    setSpeakerVisibility(false);
 
     examScreen.style.display = "none";
 
