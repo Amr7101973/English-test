@@ -1840,6 +1840,235 @@ body {
     }
 }
 
+
+/* =========================================================
+   3.4 — EXIT CONFIRMATION MODAL
+========================================================= */
+
+.exit-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+
+    transition:
+        opacity .2s ease,
+        visibility .2s ease;
+}
+
+.exit-modal.open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.exit-modal-backdrop {
+    position: absolute;
+    inset: 0;
+
+    background: rgba(2,6,23,.72);
+
+    backdrop-filter: blur(9px);
+}
+
+.exit-modal-card {
+    position: relative;
+    z-index: 2;
+
+    width: min(430px, 100%);
+
+    padding: 27px;
+
+    border-radius: 24px;
+
+    border: 1px solid rgba(148,163,184,.13);
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(20,29,52,.98),
+            rgba(8,14,29,.98)
+        );
+
+    box-shadow:
+        0 30px 90px rgba(0,0,0,.45),
+        inset 0 1px rgba(255,255,255,.045);
+
+    text-align: center;
+
+    transform: translateY(12px) scale(.97);
+
+    transition:
+        transform .22s ease;
+}
+
+.exit-modal.open .exit-modal-card {
+    transform: translateY(0) scale(1);
+}
+
+.exit-modal-icon {
+    width: 54px;
+    height: 54px;
+
+    margin: 0 auto 17px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 17px;
+
+    background: rgba(245,158,11,.09);
+
+    border: 1px solid rgba(245,158,11,.18);
+
+    color: #fbbf24;
+
+    font-family: Arial, sans-serif;
+
+    font-size: 28px;
+    font-weight: 800;
+
+    box-shadow:
+        0 0 30px rgba(245,158,11,.07);
+}
+
+.exit-modal-content h2 {
+    margin: 0;
+
+    color: #f8fafc;
+
+    font-size: 22px;
+    font-weight: 800;
+}
+
+.exit-modal-content p {
+    margin: 10px auto 0;
+
+    max-width: 340px;
+
+    color: #64748b;
+
+    font-size: 13px;
+    line-height: 1.8;
+}
+
+.exit-modal-actions {
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 10px;
+
+    margin-top: 24px;
+}
+
+.exit-modal-actions button {
+    min-height: 50px;
+
+    border-radius: 14px;
+
+    font-family:
+        "Noto Sans Arabic",
+        Arial,
+        sans-serif;
+
+    font-size: 12px;
+    font-weight: 800;
+
+    cursor: pointer;
+
+    transition:
+        transform .18s ease,
+        background .18s ease,
+        border-color .18s ease;
+}
+
+.exit-modal-no {
+    border: 1px solid rgba(129,140,248,.18);
+
+    background: rgba(99,102,241,.10);
+
+    color: #c7d2fe;
+}
+
+.exit-modal-no:hover {
+    transform: translateY(-2px);
+
+    background: rgba(99,102,241,.16);
+
+    border-color: rgba(129,140,248,.32);
+}
+
+.exit-modal-yes {
+    border: 1px solid rgba(248,113,113,.16);
+
+    background: rgba(239,68,68,.07);
+
+    color: #fca5a5;
+}
+
+.exit-modal-yes:hover {
+    transform: translateY(-2px);
+
+    background: rgba(239,68,68,.13);
+
+    border-color: rgba(248,113,113,.30);
+}
+
+@media (max-width: 650px) {
+
+    .exit-modal {
+        padding: 16px;
+    }
+
+    .exit-modal-card {
+        padding: 23px 18px 18px;
+
+        border-radius: 21px;
+    }
+
+    .exit-modal-content h2 {
+        font-size: 20px;
+    }
+
+    .exit-modal-content p {
+        font-size: 12px;
+    }
+
+    .exit-modal-actions button {
+        min-height: 49px;
+        font-size: 11px;
+    }
+}
+
+/* Speaker press feedback */
+.speaker.speaking {
+    color: #a5f3fc;
+
+    border-color: rgba(103,232,249,.48);
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(34,211,238,.18),
+            rgba(99,102,241,.14)
+        );
+
+    box-shadow:
+        0 0 0 4px rgba(34,211,238,.06),
+        0 12px 35px rgba(34,211,238,.14);
+}
+
 </style>
 </head>
 
@@ -2167,7 +2396,7 @@ body {
 
                     <button
                         class="exit-exam"
-                        onclick="exitExam()"
+                        onclick="showExitConfirm()"
                         type="button"
                         title="الخروج والعودة لاختيار طريقة أخرى">
 
@@ -2308,6 +2537,58 @@ body {
 
 </div>
 
+
+<!-- =====================================================
+     EXIT CONFIRMATION MODAL
+===================================================== -->
+
+<div class="exit-modal" id="exitModal" aria-hidden="true">
+
+    <div class="exit-modal-backdrop" onclick="hideExitConfirm()"></div>
+
+    <div class="exit-modal-card" role="dialog" aria-modal="true" aria-labelledby="exitModalTitle">
+
+        <div class="exit-modal-icon">
+            !
+        </div>
+
+        <div class="exit-modal-content">
+
+            <h2 id="exitModalTitle">
+                هل أنت متأكد من الخروج؟
+            </h2>
+
+            <p>
+                هتخرج من الاختبار الحالي وترجع لاختيار طريقة امتحان تانية.
+            </p>
+
+        </div>
+
+        <div class="exit-modal-actions">
+
+            <button
+                class="exit-modal-no"
+                type="button"
+                onclick="hideExitConfirm()">
+
+                لا، أكمل الاختبار
+
+            </button>
+
+            <button
+                class="exit-modal-yes"
+                type="button"
+                onclick="confirmExitExam()">
+
+                نعم، اخرج
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
 
 <script>
 
@@ -2621,16 +2902,64 @@ function startExam(selectedMode) {
    EXIT EXAM
 ========================================================= */
 
-function exitExam() {
+function showExitConfirm() {
+
+    const modal =
+        document.getElementById("exitModal");
+
+    if (!modal) return;
+
+    modal.classList.add("open");
+
+    modal.setAttribute(
+        "aria-hidden",
+        "false"
+    );
 
     /*
-       Leave the current exam immediately and return
-       to the mode-selection screen.
+       Put focus on the safe option so an accidental
+       keyboard action cannot immediately confirm exit.
     */
+
+    const noButton =
+        modal.querySelector(".exit-modal-no");
+
+    if (noButton) {
+        setTimeout(() => noButton.focus(), 30);
+    }
+}
+
+
+function hideExitConfirm() {
+
+    const modal =
+        document.getElementById("exitModal");
+
+    if (!modal) return;
+
+    modal.classList.remove("open");
+
+    modal.setAttribute(
+        "aria-hidden",
+        "true"
+    );
+}
+
+
+function confirmExitExam() {
+
+    hideExitConfirm();
 
     if ("speechSynthesis" in window) {
 
         speechSynthesis.cancel();
+    }
+
+    const speaker =
+        document.getElementById("speakerBtn");
+
+    if (speaker) {
+        speaker.classList.remove("speaking");
     }
 
     mode = null;
@@ -2654,6 +2983,29 @@ function exitExam() {
         behavior: "smooth"
     });
 }
+
+
+function exitExam() {
+
+    /*
+       Kept as a compatibility wrapper.
+       New exit clicks use the confirmation modal.
+    */
+
+    showExitConfirm();
+}
+
+
+/*
+   ESC closes the confirmation dialog instead of exiting.
+*/
+document.addEventListener("keydown", event => {
+
+    if (event.key === "Escape") {
+
+        hideExitConfirm();
+    }
+});
 
 
 /* =========================================================
@@ -3149,6 +3501,63 @@ function levenshtein(a, b) {
    SPEAKER
 ========================================================= */
 
+let availableVoices = [];
+
+function loadSpeechVoices() {
+
+    if (!("speechSynthesis" in window)) {
+        return;
+    }
+
+    availableVoices =
+        window.speechSynthesis.getVoices();
+}
+
+
+/*
+   Mobile browsers sometimes populate the voice list
+   after the page has already loaded.
+*/
+if ("speechSynthesis" in window) {
+
+    loadSpeechVoices();
+
+    window.speechSynthesis.addEventListener(
+        "voiceschanged",
+        loadSpeechVoices
+    );
+}
+
+
+function getEnglishVoice() {
+
+    const voices =
+        availableVoices.length
+            ? availableVoices
+            : window.speechSynthesis.getVoices();
+
+    if (!voices.length) {
+        return null;
+    }
+
+    return (
+        voices.find(voice =>
+            voice.lang.toLowerCase() === "en-us"
+        ) ||
+
+        voices.find(voice =>
+            voice.lang.toLowerCase() === "en-gb"
+        ) ||
+
+        voices.find(voice =>
+            voice.lang.toLowerCase().startsWith("en")
+        ) ||
+
+        null
+    );
+}
+
+
 function speakCurrent() {
 
     const q =
@@ -3157,23 +3566,28 @@ function speakCurrent() {
     if (!q) return;
 
 
-    /*
-       Always pronounce English.
-    */
-
-    const text =
-        q.en;
-
-
-    if (!("speechSynthesis" in window)) {
+    if (!("speechSynthesis" in window) ||
+        !("SpeechSynthesisUtterance" in window)) {
 
         alert(
-            "المتصفح ده لا يدعم النطق الصوتي."
+            "المتصفح على الجهاز ده لا يدعم النطق الصوتي."
         );
 
         return;
     }
 
+
+    const text = q.en;
+
+    const speaker =
+        document.getElementById("speakerBtn");
+
+
+    /*
+       Keep this function directly inside the click
+       handler. This is important on mobile browsers
+       that require speech to start from a user gesture.
+    */
 
     window.speechSynthesis.cancel();
 
@@ -3183,10 +3597,91 @@ function speakCurrent() {
 
 
     utterance.lang = "en-US";
-
     utterance.rate = 0.78;
-
     utterance.pitch = 1;
+
+
+    const voice =
+        getEnglishVoice();
+
+    if (voice) {
+        utterance.voice = voice;
+        utterance.lang = voice.lang;
+    }
+
+
+    utterance.onstart = () => {
+
+        if (speaker) {
+            speaker.classList.add("speaking");
+        }
+    };
+
+
+    utterance.onend = () => {
+
+        if (speaker) {
+            speaker.classList.remove("speaking");
+        }
+    };
+
+
+    utterance.onerror = () => {
+
+        if (speaker) {
+            speaker.classList.remove("speaking");
+        }
+
+        /*
+           A second immediate attempt helps on some
+           mobile Chromium builds when the first voice
+           instance has not been initialized yet.
+        */
+
+        setTimeout(() => {
+
+            const retry =
+                new SpeechSynthesisUtterance(text);
+
+            retry.lang = "en-US";
+            retry.rate = 0.78;
+            retry.pitch = 1;
+
+            const retryVoice =
+                getEnglishVoice();
+
+            if (retryVoice) {
+                retry.voice = retryVoice;
+                retry.lang = retryVoice.lang;
+            }
+
+            retry.onend = () => {
+
+                if (speaker) {
+                    speaker.classList.remove("speaking");
+                }
+            };
+
+            retry.onerror = () => {
+
+                if (speaker) {
+                    speaker.classList.remove("speaking");
+                }
+            };
+
+            if (speaker) {
+                speaker.classList.add("speaking");
+            }
+
+            window.speechSynthesis.speak(retry);
+
+        }, 80);
+    };
+
+
+    if (speaker) {
+        speaker.classList.add("speaking");
+    }
 
 
     window.speechSynthesis.speak(
